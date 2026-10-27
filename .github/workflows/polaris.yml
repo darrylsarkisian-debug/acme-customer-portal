@@ -1,0 +1,68 @@
+# Polaris SAST + SCA for Acme Customer Portal.
+#
+# The Black Duck Security Scan Action picks the scan type for us:
+#   - push to main     -> full scan (establishes the baseline in Polaris)
+#   - pull_request     -> pull request scan (new issues vs. the main baseline)
+#
+# Reference: https://docs.blackduck.com/r/bridge/latest/bridge-cli-guide/quickstart-black-duck-security-scan-action-with-polaris.html
+
+name: Polaris Security Scan
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write   # lets the scan post findings as PR comments
+
+jobs:
+  polaris:
+    name: Polaris SAST + SCA
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      # C# is a compiled language, so SAST (Coverity) captures the build.
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      # Restore first so SCA can resolve NuGet dependencies.
+      - name: Restore
+        run: dotnet restore src/AcmePortal.Web/AcmePortal.Web.csproj
+
+      - name: Polaris scan
+        id: polaris-scan
+        uses: blackduck-inc/black-duck-security-scan@v2
+        with:
+          ### Required
+          polaris_server_url: ${{ secrets.POLARIS_SERVER_URL }}
+          polaris_access_token: ${{ secrets.POLARIS_ACCESS_TOKEN }}
+          polaris_assessment_types: "SCA,SAST"
+
+          ### Developer feedback: comment on the PR with newly introduced issues
+          polaris_prComment_enabled: true
+          polaris_prComment_severities: "critical,high"
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+          ### Build capture for SAST (compiled language)
+          coverity_build_command: dotnet build src/AcmePortal.Web/AcmePortal.Web.csproj --configuration Release --no-incremental
+          coverity_clean_command: dotnet clean src/AcmePortal.Web/AcmePortal.Web.csproj
+
+          ### Merge gate: the job must fail when the policy is violated, and that failing check is made
+          ### required by the branch ruleset. The docs do not fully describe how Polaris policy results
+          ### map to the action's exit status, so prove it in rehearsal (see docs/demo-script.md).
+          # mark_build_status: failure
+
+          ### Optional extras, left off for the first run (see docs/demo-script.md)
+          # polaris_test_sast_type: SAST_RAPID           # faster Sigma scan for PRs, rehearse before relying on it
+          # polaris_fixpr_enabled: true                  # Fix PRs for SCA upgrades (needs pull-requests and contents write)
+          # polaris_reports_sarif_create: true           # SARIF report as a build artifact
+          # include_diagnostics: true                    # upload Bridge logs when troubleshooting

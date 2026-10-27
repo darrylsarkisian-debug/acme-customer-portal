@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@ViewData["Title"] - Acme Customer Portal</title>
+    <link rel="stylesheet" href="~/css/site.css" />
+</head>
+<body>
+    <header>
+        <a class="brand" asp-controller="Home" asp-action="Index">Acme Customer Portal</a>
+        <nav>
+            @if (Context.Session.GetInt32("CustomerId") is not null)
+            {
+                <a asp-controller="Orders" asp-action="Index">My orders</a>
+                <form asp-controller="Account" asp-action="Logout" method="post" class="inline">
+                    <button type="submit">Sign out</button>
+                </form>
+            }
+            else
+            {
+                <a asp-controller="Account" asp-action="Login">Sign in</a>
+            }
+        </nav>
+    </header>
+    <main>
+        @RenderBody()
+    </main>
+    <footer>
+        Demo application, simplified on purpose for security tooling demos. Not for production use.
+    </footer>
+</body>
+</html>

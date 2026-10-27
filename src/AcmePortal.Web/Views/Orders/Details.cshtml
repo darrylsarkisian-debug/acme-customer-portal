@@ -1,0 +1,12 @@
+@model Order
+@{
+    ViewData["Title"] = $"Order #{Model.Id}";
+}
+<h1>Order #@Model.Id</h1>
+<dl>
+    <dt>Description</dt><dd>@Model.Description</dd>
+    <dt>Placed</dt><dd>@Model.PlacedOn.ToString("yyyy-MM-dd")</dd>
+    <dt>Status</dt><dd>@Model.Status</dd>
+    <dt>Total</dt><dd>@Model.Total.ToString("C")</dd>
+</dl>
+<p><a asp-action="Index">Back to my orders</a></p>
