@@ -47,6 +47,10 @@ jobs:
           polaris_access_token: ${{ secrets.POLARIS_ACCESS_TOKEN }}
           polaris_assessment_types: "SCA,SAST"
 
+          ### Use the existing Polaris application for this tenant. The access token is not allowed to
+          ### create a new application (401 on the first run). The project defaults to the repo name.
+          polaris_application_name: "Sarkisian Interview"
+
           ### Developer feedback: comment on the PR with newly introduced issues
           polaris_prComment_enabled: true
           polaris_prComment_severities: "critical,high"
